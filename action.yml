@@ -91,7 +91,7 @@ runs:
   # Upload the Kiri output using the GitHub Pages artifact action.
   - name: Upload Kiri custom output for GitHub Pages
     if: inputs.output-dir != '' && github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
-    uses: actions/upload-pages-artifact@v1
+    uses: actions/upload-pages-artifact@v3
     with:
       path: ${{ inputs.output-dir }}
   - name: Get Kiri output directory
@@ -109,11 +109,11 @@ runs:
       tree /home/runner/work/phoenix/phoenix/schematics/phoenix_v1/.kiri
   - name: Upload Kiri output for GitHub Pages
     if: inputs.output-dir == '' && github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
-    uses: actions/upload-pages-artifact@v1
+    uses: actions/upload-pages-artifact@v3
     with:
       path: ${{ steps.kiri-output.outputs.output-dir }}
   # Removed manual gh-pages branch checkout and commit steps.
   # Deploy the uploaded Pages artifact.
   - name: Deploy to GitHub Pages
     if: github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
-    uses: actions/deploy-pages@v1
+    uses: actions/deploy-pages@v4

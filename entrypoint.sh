@@ -77,8 +77,5 @@ fi
 # Run kiri and passthrough all arguments
 kiri ${KIRI_ARGS} $@ ${KIRI_PROJECT_FILE}
 
-sudo apt install tree
-tree
-
 # Restore the ownership of ${GITHUB_WORKSPACE}
 sudo chown -R ${OWNER_ID}:${GROUP_ID} ${GITHUB_WORKSPACE}

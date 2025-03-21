@@ -85,16 +85,19 @@ runs:
     with:
       args: ${{ inputs.extra-args }}
 
-  # Prepare the artifact directory with the old folder structure.
   - name: Prepare artifact directory for Pages deployment
     if: github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
     shell: bash
     run: |
-      # Determine the output directory. Default to ".kiri" if not provided.
-      if [ -z "${{ inputs.output-dir }}" ]; then
-        OUTPUT_DIR=".kiri"
-      else
+      # Determine the output directory:
+      if [ -n "${{ inputs.output-dir }}" ]; then
         OUTPUT_DIR="${{ inputs.output-dir }}"
+      else
+        if [ -n "${{ inputs.project-file }}" ]; then
+          OUTPUT_DIR="$(dirname "${{ inputs.project-file }}")/.kiri"
+        else
+          OUTPUT_DIR=".kiri"
+        fi
       fi
       echo "Using output directory: $OUTPUT_DIR"
       
@@ -102,7 +105,7 @@ runs:
       rm -rf artifact
       mkdir -p artifact/pr-previews/${{ github.event.pull_request.number }}/web
       
-      # Copy all files including hidden ones.
+      # Copy all files (including hidden ones) from the output directory.
       cp -r "$OUTPUT_DIR/." artifact/pr-previews/${{ github.event.pull_request.number }}/web/
 
   # Upload the prepared artifact for Pages deployment.

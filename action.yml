@@ -67,7 +67,6 @@ runs:
       else
         echo "changed=false" >> $GITHUB_OUTPUT
       fi
-      tree
   - name: Run Kiri
     # The __KIRI VERSION__ below will be replaced by the semver version of the action
     # This is done by the release action and propagated to the tags
@@ -108,6 +107,7 @@ runs:
       else
         echo "output-dir=$(dirname ${{ inputs.project-file }})/.kiri" >> $GITHUB_OUTPUT
       fi
+      tree
   - name: Upload Kiri output
     uses: actions/upload-artifact@v4
     if: inputs.output-dir == '' && github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'

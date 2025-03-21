@@ -90,6 +90,7 @@ runs:
     with:
       args: ${{ inputs.extra-args }}
   - name: tree
+    shell: bash
     run: tree
   - name: Upload Kiri custom output
     uses: actions/upload-artifact@v4

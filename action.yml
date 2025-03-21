@@ -85,7 +85,7 @@ runs:
     with:
       args: ${{ inputs.extra-args }}
 
-  # Prepare the artifact directory with the old folder structure
+  # Prepare the artifact directory with the old folder structure.
   - name: Prepare artifact directory for Pages deployment
     if: github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
     shell: bash
@@ -102,8 +102,8 @@ runs:
       rm -rf artifact
       mkdir -p artifact/pr-previews/${{ github.event.pull_request.number }}/web
       
-      # Copy the generated files into the artifact folder, preserving the structure.
-      cp -r $OUTPUT_DIR/* artifact/pr-previews/${{ github.event.pull_request.number }}/web/
+      # Copy all files including hidden ones.
+      cp -r "$OUTPUT_DIR/." artifact/pr-previews/${{ github.event.pull_request.number }}/web/
 
   # Upload the prepared artifact for Pages deployment.
   - name: Upload artifact for GitHub Pages
@@ -111,6 +111,7 @@ runs:
     uses: actions/upload-pages-artifact@v3
     with:
       path: artifact
+      include-hidden-files: true
 
   # Deploy the artifact via GitHub Pages.
   - name: Deploy to GitHub Pages

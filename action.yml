@@ -145,7 +145,7 @@ runs:
     run: |
       cd gh-pages
       git add -A
-      git commit -m "Update Kiri output for PR #${{ github.event.pull_request.number }}"
+      git commit -m "Update Kiri output for PR #${{ github.event.pull_request.number }}" || true
       git push origin gh-pages
       echo "repository_name=${REPO##*/}" >> $GITHUB_OUTPUT
     env:

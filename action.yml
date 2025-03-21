@@ -95,6 +95,7 @@ runs:
     with:
       name: kiri-output
       path: ${{ inputs.output-dir }}
+      include-hidden-files: true
   - name: Get Kiri output directory
     id: kiri-output
     if : inputs.output-dir == '' && github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
@@ -115,6 +116,7 @@ runs:
     with:
       name: kiri-output
       path: ${{ steps.kiri-output.outputs.output-dir }}
+      include-hidden-files: true
   - name: Checkout gh-pages branch
     if: github.event_name == 'pull_request'
     uses: actions/checkout@v3

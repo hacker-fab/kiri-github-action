@@ -37,25 +37,22 @@ runs:
   using: composite
   steps:
   - name: Get number of commits in PR
-    if: github.event_name == 'pull_request' && (github.event_name == 'pull_request' && github.event.action != 'closed')
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
     id: pr
     shell: bash
     run: |
-      # Set DEFAULT_LAST to the number of commits in the PR if ${{ inputs.last }} is not set. The minimum is 2.
       if [ -z "${{ inputs.last }}" ]; then
-        # Un-shallow, but don't fail if it's already unshallow
         git fetch --unshallow || true
         git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
-        # Deepen topic branch; checkout topic branch
         git fetch origin ${{ github.event.pull_request.head.ref }} --depth=$(( ${{ github.event.pull_request.commits }} + 1 ))
         git checkout ${{ github.event.pull_request.head.ref }}
-        # Fetch main for common origin
         git fetch origin main:main
         COUNT=$(git rev-list --count ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
-        echo "DEFAULT_LAST=\"${COUNT}\"" >> $GITHUB_ENV
+        echo "DEFAULT_LAST=${COUNT}" >> $GITHUB_ENV
       else
-        echo "DEFAULT_LAST=\"${{ inputs.last }}\"" >> $GITHUB_ENV
+        echo "DEFAULT_LAST=${{ inputs.last }}" >> $GITHUB_ENV
       fi
+
   - name: Check for KiCad files
     id: kicad-files
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
@@ -66,9 +63,8 @@ runs:
       else
         echo "changed=false" >> $GITHUB_OUTPUT
       fi
+
   - name: Run Kiri
-    # The __KIRI VERSION__ below will be replaced by the semver version of the action
-    # This is done by the release action and propagated to the tags
     uses: docker://ghcr.io/usa-reddragon/kiri:v1.0.30
     if: github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
     env:
@@ -88,32 +84,45 @@ runs:
       KIRI_TAG: ${{ inputs.kiri-tag }}
     with:
       args: ${{ inputs.extra-args }}
-  # Upload the Kiri output using the GitHub Pages artifact action.
-  - name: Upload Kiri custom output for GitHub Pages
-    if: inputs.output-dir != '' && github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
-    uses: actions/upload-pages-artifact@v3
-    with:
-      path: ${{ inputs.output-dir }}
-  - name: Get Kiri output directory
-    id: kiri-output
-    if: inputs.output-dir == '' && github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
+
+  # Prepare the artifact directory with the old folder structure
+  - name: Prepare artifact directory for Pages deployment
+    if: github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
     shell: bash
     run: |
-      # If project-file is not set, the output directory is simply .kiri
-      if [ -z "${{ inputs.project-file }}" ]; then
-        echo "output-dir=.kiri" >> $GITHUB_OUTPUT
+      # Determine the output directory. Default to ".kiri" if not provided.
+      if [ -z "${{ inputs.output-dir }}" ]; then
+        OUTPUT_DIR=".kiri"
       else
-        echo "output-dir=$(dirname ${{ inputs.project-file }})/.kiri" >> $GITHUB_OUTPUT
+        OUTPUT_DIR="${{ inputs.output-dir }}"
       fi
-      find ~ -type d -name ".kiri"
-      tree /home/runner/work/phoenix/phoenix/schematics/phoenix_v1/.kiri
-  - name: Upload Kiri output for GitHub Pages
-    if: inputs.output-dir == '' && github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
+      echo "Using output directory: $OUTPUT_DIR"
+      
+      # Remove any existing artifact directory and recreate the structure.
+      rm -rf artifact
+      mkdir -p artifact/pr-previews/${{ github.event.pull_request.number }}/web
+      
+      # Copy the generated files into the artifact folder, preserving the structure.
+      cp -r $OUTPUT_DIR/* artifact/pr-previews/${{ github.event.pull_request.number }}/web/
+
+  # Upload the prepared artifact for Pages deployment.
+  - name: Upload artifact for GitHub Pages
+    if: github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
     uses: actions/upload-pages-artifact@v3
     with:
-      path: ${{ steps.kiri-output.outputs.output-dir }}
-  # Removed manual gh-pages branch checkout and commit steps.
-  # Deploy the uploaded Pages artifact.
+      path: artifact
+
+  # Deploy the artifact via GitHub Pages.
   - name: Deploy to GitHub Pages
     if: github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
     uses: actions/deploy-pages@v4
+
+  # Create a PR comment with the preview link.
+  - name: Create a comment with the preview link
+    if: github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
+    uses: peter-evans/create-or-update-comment@v4
+    with:
+      issue-number: ${{ github.event.pull_request.number }}
+      body: |
+        Kiri diff output preview is available at:
+        https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-previews/${{ github.event.pull_request.number }}/web/index.html

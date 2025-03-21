@@ -54,7 +54,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           git add action.yml
-          git commit -m "${{ steps.full_version.outputs.full_version }}"
+          git commit -m "${{ steps.full_version.outputs.full_version }}" || true
           git tag -d ${{ steps.full_version.outputs.full_version }} || true
           git push origin :refs/tags/${{ steps.full_version.outputs.full_version }} || true
           git tag ${{ steps.full_version.outputs.full_version }}

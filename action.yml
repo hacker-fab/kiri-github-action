@@ -65,7 +65,7 @@ runs:
       fi
 
   - name: Run Kiri
-    uses: docker://ghcr.io/usa-reddragon/kiri:v1.0.30
+    uses: docker://ghcr.io/hacker-fab/kiri:__KIRI_VERSION__
     if: github.event_name == 'pull_request' && github.event.action != 'closed' && steps.kicad-files.outputs.changed == 'true'
     env:
       KIRI_PROJECT_FILE: ${{ inputs.project-file }}
